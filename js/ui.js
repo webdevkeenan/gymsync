@@ -3,6 +3,9 @@
 class UIManager {
     constructor() {
         this.currentScreen = 'dashboard';
+        this.isMobile = false;
+        this.isTablet = false;
+        this.touchSupported = false;
         this.init();
     }
 
@@ -11,6 +14,99 @@ class UIManager {
         this.setupSidebar();
         this.setupModal();
         this.setupToast();
+        this.setupResponsiveHandlers();
+        this.setupTouchHandlers();
+        this.detectDeviceType();
+    }
+
+    detectDeviceType() {
+        this.isMobile = window.innerWidth <= 768;
+        this.isTablet = window.innerWidth > 768 && window.innerWidth <= 1024;
+        this.touchSupported = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        
+        // Update body classes for device-specific styling
+        document.body.classList.toggle('mobile', this.isMobile);
+        document.body.classList.toggle('tablet', this.isTablet);
+        document.body.classList.toggle('desktop', !this.isMobile && !this.isTablet);
+        document.body.classList.toggle('touch', this.touchSupported);
+    }
+
+    setupResponsiveHandlers() {
+        // Handle window resize with debouncing
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                this.detectDeviceType();
+                this.handleResponsiveLayout();
+            }, 250);
+        });
+
+        // Handle orientation change
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                this.detectDeviceType();
+                this.handleOrientationChange();
+            }, 100);
+        });
+    }
+
+    setupTouchHandlers() {
+        if (!this.touchSupported) return;
+
+        // Add touch feedback for buttons
+        document.addEventListener('touchstart', (e) => {
+            if (e.target.matches('.btn, .nav-link, .product-card, .class-card, .member-option, .search-result')) {
+                e.target.style.transform = 'scale(0.98)';
+            }
+        });
+
+        document.addEventListener('touchend', (e) => {
+            if (e.target.matches('.btn, .nav-link, .product-card, .class-card, .member-option, .search-result')) {
+                setTimeout(() => {
+                    e.target.style.transform = '';
+                }, 150);
+            }
+        });
+
+        // Prevent double-tap zoom on form inputs
+        document.addEventListener('touchstart', (e) => {
+            if (e.target.matches('input, textarea, select')) {
+                e.target.style.fontSize = '16px';
+            }
+        });
+    }
+
+    handleResponsiveLayout() {
+        // Auto-hide sidebar on mobile when switching screens
+        if (this.isMobile) {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.remove('active');
+        }
+
+        // Adjust modal positioning
+        const modals = document.querySelectorAll('.modal');
+        modals.forEach(modal => {
+            if (this.isMobile) {
+                modal.style.width = '95%';
+                modal.style.margin = '1rem';
+            } else if (this.isTablet) {
+                modal.style.width = '90%';
+                modal.style.margin = 'auto';
+            }
+        });
+    }
+
+    handleOrientationChange() {
+        // Special handling for landscape mode on phones
+        if (this.isMobile && window.innerHeight < window.innerWidth) {
+            document.body.classList.add('landscape-mode');
+            
+            // Show toast for landscape mode
+            this.showToast('For better experience, consider using portrait mode', 'info', 'Landscape Mode');
+        } else {
+            document.body.classList.remove('landscape-mode');
+        }
     }
 
     // Screen Navigation
@@ -45,8 +141,65 @@ class UIManager {
         document.getElementById('pageTitle').textContent = titles[screenName] || 'GymSync';
 
         // Close mobile sidebar
-        if (window.innerWidth <= 768) {
+        if (this.isMobile) {
             document.getElementById('sidebar').classList.remove('active');
+        }
+
+        // Trigger screen-specific responsive adjustments
+        this.handleScreenResponsive(screenName);
+    }
+
+    handleScreenResponsive(screenName) {
+        switch (screenName) {
+            case 'pos':
+                this.handlePOSResponsive();
+                break;
+            case 'members':
+                this.handleMembersResponsive();
+                break;
+            case 'classes':
+                this.handleClassesResponsive();
+                break;
+        }
+    }
+
+    handlePOSResponsive() {
+        const posContainer = document.querySelector('.pos-container');
+        const posCart = document.querySelector('.pos-cart');
+        
+        if (this.isMobile) {
+            // Make cart sticky on mobile
+            posCart.style.position = 'sticky';
+            posCart.style.top = '0';
+            posCart.style.zIndex = '10';
+        } else {
+            // Reset to default positioning
+            posCart.style.position = '';
+            posCart.style.top = '';
+            posCart.style.zIndex = '';
+        }
+    }
+
+    handleMembersResponsive() {
+        const table = document.querySelector('.data-table');
+        if (this.isMobile && table) {
+            // Add horizontal scroll wrapper for table
+            if (!table.parentElement.classList.contains('table-wrapper')) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'table-wrapper';
+                wrapper.style.overflowX = 'auto';
+                wrapper.style.webkitOverflowScrolling = 'touch';
+                table.parentNode.insertBefore(wrapper, table);
+                wrapper.appendChild(table);
+            }
+        }
+    }
+
+    handleClassesResponsive() {
+        const classesGrid = document.querySelector('.classes-grid');
+        if (this.isMobile && classesGrid) {
+            // Adjust grid for mobile
+            classesGrid.style.gridTemplateColumns = '1fr';
         }
     }
 
@@ -58,6 +211,33 @@ class UIManager {
                 this.showScreen(screenName);
             });
         });
+
+        // Add mobile menu toggle
+        if (this.isMobile) {
+            this.addMobileMenuToggle();
+        }
+    }
+
+    addMobileMenuToggle() {
+        const header = document.querySelector('.header');
+        const mobileToggle = document.createElement('button');
+        mobileToggle.className = 'mobile-menu-toggle';
+        mobileToggle.innerHTML = '<i class="fas fa-bars"></i>';
+        mobileToggle.style.cssText = `
+            background: none;
+            border: none;
+            font-size: 1.25rem;
+            color: var(--text-primary);
+            cursor: pointer;
+            padding: 0.5rem;
+        `;
+
+        mobileToggle.addEventListener('click', () => {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('active');
+        });
+
+        header.insertBefore(mobileToggle, header.firstChild);
     }
 
     setupSidebar() {
@@ -68,9 +248,43 @@ class UIManager {
             sidebar.classList.toggle('collapsed');
         });
 
-        // Mobile sidebar toggle
-        if (window.innerWidth <= 768) {
+        // Add swipe gestures for mobile
+        if (this.touchSupported) {
+            this.setupSwipeGestures(sidebar);
+        }
+
+        // Initialize sidebar state based on screen size
+        if (this.isMobile) {
             sidebar.classList.add('collapsed');
+        }
+    }
+
+    setupSwipeGestures(sidebar) {
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+
+        document.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            this.handleSwipeGesture(touchStartX, touchEndX, sidebar);
+        });
+    }
+
+    handleSwipeGesture(startX, endX, sidebar) {
+        const swipeThreshold = 50;
+        const diff = startX - endX;
+
+        if (Math.abs(diff) > swipeThreshold) {
+            if (diff > 0) {
+                // Swipe left - close sidebar
+                sidebar.classList.remove('active');
+            } else {
+                // Swipe right - open sidebar
+                sidebar.classList.add('active');
+            }
         }
     }
 
