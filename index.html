@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GymSync - Gym Management Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-dumbbell"></i>
+                    <span>GymSync</span>
+                </div>
+                <button class="sidebar-toggle" id="sidebarToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <ul class="nav-list">
+                    <li class="nav-item">
+                        <a href="#" class="nav-link active" data-screen="dashboard">
+                            <i class="fas fa-tachometer-alt"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-screen="members">
+                            <i class="fas fa-users"></i>
+                            <span>Member Management</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-screen="checkin">
+                            <i class="fas fa-sign-in-alt"></i>
+                            <span>Check-In</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-screen="classes">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span>Classes</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-screen="pos">
+                            <i class="fas fa-shopping-cart"></i>
+                            <span>Point of Sale</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-screen="notifications">
+                            <i class="fas fa-bell"></i>
+                            <span>Notifications</span>
+                            <span class="notification-badge" id="notificationBadge">0</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="offline-toggle">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="offlineMode">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="toggle-label">Offline Mode</span>
+                </div>
+                <button class="btn btn-outline btn-sm" id="resetData">
+                    <i class="fas fa-redo"></i>
+                    Reset Demo Data
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-left">
+                    <h1 class="page-title" id="pageTitle">Dashboard</h1>
+                </div>
+                <div class="header-right">
+                    <div class="user-info">
+                        <span class="user-name">Front Desk Staff</span>
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Screen Content -->
+            <div class="screen-content" id="screenContent">
+                <!-- Dashboard Screen -->
+                <div class="screen" id="dashboard-screen">
+                    <div class="dashboard-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-sign-in-alt"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="todayCheckins">0</h3>
+                                <p>Today's Check-ins</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="upcomingClasses">0</h3>
+                                <p>Upcoming Classes</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-dollar-sign"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="todaySales">$0</h3>
+                                <p>Today's Sales</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="activeMembers">0</h3>
+                                <p>Active Members</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-sections">
+                        <div class="section">
+                            <h2>Recent Activity</h2>
+                            <div class="activity-list" id="recentActivity">
+                                <!-- Activity items will be populated here -->
+                            </div>
+                        </div>
+                        <div class="section">
+                            <h2>Alerts & Notifications</h2>
+                            <div class="alerts-list" id="alertsList">
+                                <!-- Alert items will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Member Management Screen -->
+                <div class="screen hidden" id="members-screen">
+                    <div class="screen-header">
+                        <div class="search-bar">
+                            <input type="text" id="memberSearch" placeholder="Search members by name, email, or ID...">
+                            <button class="btn btn-primary" id="addMemberBtn">
+                                <i class="fas fa-plus"></i>
+                                Add Member
+                            </button>
+                        </div>
+                    </div>
+                    <div class="members-table-container">
+                        <table class="data-table" id="membersTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>Plan</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="membersTableBody">
+                                <!-- Member rows will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Check-In Screen -->
+                <div class="screen hidden" id="checkin-screen">
+                    <div class="checkin-container">
+                        <div class="checkin-search">
+                            <h2>Member Check-In</h2>
+                            <div class="search-container">
+                                <input type="text" id="checkinSearch" placeholder="Search member by name, email, or ID...">
+                                <button class="btn btn-primary" id="searchCheckinBtn">
+                                    <i class="fas fa-search"></i>
+                                    Search
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="checkin-results" id="checkinResults">
+                            <!-- Check-in results will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Classes Screen -->
+                <div class="screen hidden" id="classes-screen">
+                    <div class="classes-container">
+                        <h2>Class Schedule</h2>
+                        <div class="classes-grid" id="classesGrid">
+                            <!-- Class cards will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Point of Sale Screen -->
+                <div class="screen hidden" id="pos-screen">
+                    <div class="pos-container">
+                        <div class="pos-products">
+                            <h2>Products</h2>
+                            <div class="products-grid" id="productsGrid">
+                                <!-- Product cards will be populated here -->
+                            </div>
+                        </div>
+                        <div class="pos-cart">
+                            <h2>Shopping Cart</h2>
+                            <div class="cart-items" id="cartItems">
+                                <!-- Cart items will be populated here -->
+                            </div>
+                            <div class="cart-summary">
+                                <div class="summary-row">
+                                    <span>Subtotal:</span>
+                                    <span id="cartSubtotal">$0.00</span>
+                                </div>
+                                <div class="summary-row">
+                                    <span>Tax (10%):</span>
+                                    <span id="cartTax">$0.00</span>
+                                </div>
+                                <div class="summary-row total">
+                                    <span>Total:</span>
+                                    <span id="cartTotal">$0.00</span>
+                                </div>
+                            </div>
+                            <div class="payment-methods">
+                                <h3>Payment Method</h3>
+                                <div class="payment-options">
+                                    <label class="payment-option">
+                                        <input type="radio" name="payment" value="cash" checked>
+                                        <span>Cash</span>
+                                    </label>
+                                    <label class="payment-option">
+                                        <input type="radio" name="payment" value="card">
+                                        <span>Card</span>
+                                    </label>
+                                    <label class="payment-option">
+                                        <input type="radio" name="payment" value="mobile">
+                                        <span>Mobile</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary btn-block" id="checkoutBtn">
+                                <i class="fas fa-credit-card"></i>
+                                Checkout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notifications Screen -->
+                <div class="screen hidden" id="notifications-screen">
+                    <div class="notifications-container">
+                        <h2>Notifications</h2>
+                        <div class="notifications-list" id="notificationsList">
+                            <!-- Notifications will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Modal Container -->
+    <div class="modal-overlay hidden" id="modalOverlay">
+        <div class="modal" id="modal">
+            <div class="modal-header">
+                <h3 id="modalTitle">Modal Title</h3>
+                <button class="modal-close" id="modalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Modal content will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/data.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/members.js"></script>
+    <script src="js/checkin.js"></script>
+    <script src="js/classes.js"></script>
+    <script src="js/pos.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/offline.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
