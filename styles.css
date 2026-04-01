@@ -16,8 +16,10 @@
     --gray-color: #6b7280;
     --light-gray: #f3f4f6;
     --border-color: #e5e7eb;
-    --text-primary: #111827;
-    --text-secondary: #6b7280;
+    --text-primary: #1a202c;
+    --text-secondary: #4a5568;
+    --text-light: #718096;
+    --text-muted: #a0aec0;
     --sidebar-width: 280px;
     --sidebar-collapsed-width: 80px;
     --transition: all 0.3s ease;
@@ -1491,6 +1493,310 @@ input:checked + .toggle-slider:before {
 .mobile .notification-actions {
     width: 100%;
     justify-content: space-between;
+}
+
+/* Stat Card Interactivity */
+.stat-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.stat-card:active {
+    transform: translateY(-2px);
+}
+
+.stat-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.stat-card:hover::after {
+    opacity: 1;
+}
+
+/* Stat Details Modal Styles */
+.stat-details {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.stat-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: var(--light-gray);
+    border-radius: 0.75rem;
+}
+
+.summary-item {
+    text-align: center;
+    padding: 0.75rem;
+}
+
+.summary-item .label {
+    display: block;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.summary-item .value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.details-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.details-list h4 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--primary-color);
+}
+
+.detail-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.detail-item:hover {
+    background: var(--light-gray);
+    border-color: var(--primary-color);
+    transform: translateX(5px);
+}
+
+.detail-info strong {
+    display: block;
+    color: var(--text-primary);
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.detail-info small {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.detail-time,
+.detail-amount,
+.detail-status {
+    text-align: right;
+}
+
+.detail-time {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.detail-amount strong {
+    color: var(--success-color);
+    font-size: 1.125rem;
+}
+
+/* Enhanced Font Visibility */
+:root {
+    --text-primary: #1a202c;
+    --text-secondary: #4a5568;
+    --text-light: #718096;
+    --text-muted: #a0aec0;
+}
+
+/* Improved contrast for better readability */
+body {
+    color: var(--text-primary);
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.page-title {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.stat-info h3 {
+    color: var(--text-primary);
+    font-weight: 700;
+}
+
+.stat-info p {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.data-table th {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.data-table td {
+    color: var(--text-primary);
+}
+
+.modal-title {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.activity-title,
+.alert-title {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.activity-time,
+.alert-time {
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+.member-name,
+.class-name,
+.product-name {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.member-id,
+.class-time,
+.product-price {
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+/* Enhanced visibility for secondary text */
+.text-secondary {
+    color: var(--text-secondary) !important;
+    font-weight: 500;
+}
+
+/* Better contrast for badges */
+.badge {
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+/* Improved form visibility */
+.form-group label {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    color: var(--text-primary);
+    font-weight: 400;
+}
+
+/* Enhanced button text */
+.btn {
+    font-weight: 600;
+    letter-spacing: 0.025em;
+}
+
+/* High contrast mode improvements */
+@media (prefers-contrast: high) {
+    :root {
+        --text-primary: #000000;
+        --text-secondary: #333333;
+        --text-light: #666666;
+        --text-muted: #999999;
+    }
+    
+    .stat-card {
+        border: 2px solid var(--text-primary);
+    }
+    
+    .data-table {
+        border: 2px solid var(--text-primary);
+    }
+    
+    .data-table th,
+    .data-table td {
+        border: 1px solid var(--text-primary);
+    }
+}
+
+/* Dark mode enhanced contrast */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --text-primary: #f7fafc;
+        --text-secondary: #e2e8f0;
+        --text-light: #cbd5e0;
+        --text-muted: #a0aec0;
+    }
+}
+
+/* Mobile font enhancements */
+@media (max-width: 768px) {
+    .stat-info h3 {
+        font-size: 1.5rem;
+        font-weight: 700;
+    }
+    
+    .stat-info p {
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+    
+    .page-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+    }
+    
+    .data-table {
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    
+    .data-table th {
+        font-weight: 700;
+    }
+}
+
+/* Small mobile font adjustments */
+@media (max-width: 480px) {
+    .stat-info h3 {
+        font-size: 1.25rem;
+    }
+    
+    .stat-info p {
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
 }
 
 /* Touch Feedback */

@@ -143,9 +143,242 @@ class DashboardManager {
         return icons[type] || 'info-circle';
     }
 
+    setupStatCardInteractivity() {
+        // Add click handlers to stat cards
+        const statCards = document.querySelectorAll('.stat-card');
+        
+        statCards.forEach(card => {
+            card.style.cursor = 'pointer';
+            card.addEventListener('click', () => {
+                const statType = card.dataset.stat;
+                this.showStatDetails(statType);
+            });
+        });
+    }
+
+    showStatDetails(statType) {
+        let content = '';
+        let title = '';
+
+        switch (statType) {
+            case 'checkins':
+                title = "Today's Check-ins Details";
+                content = this.getCheckinsDetails();
+                break;
+            case 'classes':
+                title = 'Upcoming Classes Details';
+                content = this.getClassesDetails();
+                break;
+            case 'sales':
+                title = "Today's Sales Details";
+                content = this.getSalesDetails();
+                break;
+            case 'members':
+                title = 'Active Members Details';
+                content = this.getMembersDetails();
+                break;
+            default:
+                return;
+        }
+
+        ui.showModal(title, content);
+    }
+
+    getCheckinsDetails() {
+        const todayCheckins = storage.getTodayCheckins();
+        
+        if (todayCheckins.length === 0) {
+            return '<div class="empty-state"><i class="fas fa-sign-in-alt"></i><p>No check-ins today</p></div>';
+        }
+
+        const html = `
+            <div class="stat-details">
+                <div class="stat-summary">
+                    <div class="summary-item">
+                        <span class="label">Total Check-ins:</span>
+                        <span class="value">${todayCheckins.length}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="label">Peak Hour:</span>
+                        <span class="value">${this.getPeakHour(todayCheckins)}</span>
+                    </div>
+                </div>
+                <div class="details-list">
+                    <h4>Recent Check-ins</h4>
+                    ${todayCheckins.map(checkin => `
+                        <div class="detail-item">
+                            <div class="detail-info">
+                                <strong>${checkin.memberName}</strong>
+                                <small>${checkin.memberId}</small>
+                            </div>
+                            <div class="detail-time">
+                                ${new Date(checkin.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+
+        return html;
+    }
+
+    getClassesDetails() {
+        const upcomingClasses = storage.getUpcomingClasses();
+        
+        if (upcomingClasses.length === 0) {
+            return '<div class="empty-state"><i class="fas fa-calendar"></i><p>No upcoming classes today</p></div>';
+        }
+
+        const html = `
+            <div class="stat-details">
+                <div class="stat-summary">
+                    <div class="summary-item">
+                        <span class="label">Total Classes:</span>
+                        <span class="value">${upcomingClasses.length}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="label">Total Capacity:</span>
+                        <span class="value">${upcomingClasses.reduce((sum, cls) => sum + cls.capacity, 0)}</span>
+                    </div>
+                </div>
+                <div class="details-list">
+                    <h4>Upcoming Classes</h4>
+                    ${upcomingClasses.map(cls => {
+                        const enrollments = storage.getEnrollments().filter(e => e.classId === cls.id);
+                        const available = cls.capacity - enrollments.length;
+                        return `
+                            <div class="detail-item">
+                                <div class="detail-info">
+                                    <strong>${cls.name}</strong>
+                                    <small>${cls.instructor} • ${cls.time}</small>
+                                </div>
+                                <div class="detail-status">
+                                    <span class="badge ${available > 5 ? 'success' : available > 0 ? 'warning' : 'danger'}">
+                                        ${available}/${cls.capacity} spots
+                                    </span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+
+        return html;
+    }
+
+    getSalesDetails() {
+        const todaySales = storage.getTodaySales();
+        const totalSales = todaySales.reduce((total, sale) => total + sale.total, 0);
+        
+        if (todaySales.length === 0) {
+            return '<div class="empty-state"><i class="fas fa-shopping-cart"></i><p>No sales today</p></div>';
+        }
+
+        const html = `
+            <div class="stat-details">
+                <div class="stat-summary">
+                    <div class="summary-item">
+                        <span class="label">Total Sales:</span>
+                        <span class="value">${GymData.formatCurrency(totalSales)}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="label">Transactions:</span>
+                        <span class="value">${todaySales.length}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="label">Average Sale:</span>
+                        <span class="value">${GymData.formatCurrency(totalSales / todaySales.length)}</span>
+                    </div>
+                </div>
+                <div class="details-list">
+                    <h4>Recent Sales</h4>
+                    ${todaySales.map(sale => `
+                        <div class="detail-item">
+                            <div class="detail-info">
+                                <strong>Sale #${sale.id}</strong>
+                                <small>${sale.paymentMethod} • ${sale.items.length} items</small>
+                            </div>
+                            <div class="detail-amount">
+                                <strong>${GymData.formatCurrency(sale.total)}</strong>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+
+        return html;
+    }
+
+    getMembersDetails() {
+        const activeMembers = storage.getActiveMembers();
+        const allMembers = storage.getMembers();
+        
+        const html = `
+            <div class="stat-details">
+                <div class="stat-summary">
+                    <div class="summary-item">
+                        <span class="label">Active Members:</span>
+                        <span class="value">${activeMembers.length}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="label">Total Members:</span>
+                        <span class="value">${allMembers.length}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="label">Activation Rate:</span>
+                        <span class="value">${Math.round((activeMembers.length / allMembers.length) * 100)}%</span>
+                    </div>
+                </div>
+                <div class="details-list">
+                    <h4>Recently Active Members</h4>
+                    ${activeMembers.slice(0, 10).map(member => {
+                        const daysUntil = GymData.getDaysUntilExpiry(member.expiryDate);
+                        const statusClass = daysUntil > 30 ? 'success' : daysUntil > 7 ? 'warning' : 'danger';
+                        return `
+                            <div class="detail-item">
+                                <div class="detail-info">
+                                    <strong>${member.firstName} ${member.lastName}</strong>
+                                    <small>${member.plan} • ${member.id}</small>
+                                </div>
+                                <div class="detail-status">
+                                    <span class="badge ${statusClass}">
+                                        ${daysUntil} days left
+                                    </span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+
+        return html;
+    }
+
+    getPeakHour(checkins) {
+        const hourCounts = {};
+        
+        checkins.forEach(checkin => {
+            const hour = new Date(checkin.timestamp).getHours();
+            hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+        });
+
+        const peakHour = Object.keys(hourCounts).reduce((a, b) => 
+            hourCounts[a] > hourCounts[b] ? a : b
+        );
+
+        return `${peakHour}:00 - ${parseInt(peakHour) + 1}:00`;
+    }
+
     startAutoRefresh() {
-        // Refresh dashboard every 30 seconds
-        this.refreshInterval = setInterval(() => {
+        // Add click handlers to stat cards
+        this.setupStatCardInteractivity();
+        
+        // Auto-refresh dashboard every 30 seconds
+        setInterval(() => {
             this.updateDashboard();
         }, 30000);
     }
