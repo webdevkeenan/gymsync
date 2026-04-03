@@ -27,6 +27,7 @@ class GymSyncApp {
         this.loadMockData();
         this.loadPersistedData();
         this.setupEventListeners();
+        this.updateNotificationBadge();
         this.render();
         this.startPeriodicUpdates();
     }
@@ -730,7 +731,8 @@ class GymSyncApp {
         }
         
         const notificationsHtml = notifications.map(notification => `
-            <div class="notification-item ${notification.read ? '' : 'unread'} ${notification.pendingSync ? 'pending-sync' : ''}">
+            <div class="notification-item ${notification.read ? '' : 'unread'} ${notification.pendingSync ? 'pending-sync' : ''}" 
+                 onclick="app.markNotificationRead(${notification.id})">
                 <div class="notification-header">
                     <div class="notification-type ${notification.type}">${notification.type}</div>
                     <div class="notification-time">${this.formatTime(notification.createdAt)}</div>
@@ -740,6 +742,16 @@ class GymSyncApp {
         `).join('');
         
         container.innerHTML = notificationsHtml || '<p class="no-notifications">No notifications</p>';
+    }
+    
+    markNotificationRead(notificationId) {
+        const notification = this.state.notifications.find(n => n.id === notificationId);
+        if (notification && !notification.read) {
+            notification.read = true;
+            this.savePersistedData();
+            this.updateNotificationBadge();
+            this.renderNotifications();
+        }
     }
     
     // Business Logic
@@ -763,6 +775,7 @@ class GymSyncApp {
                 syncStatus: 'pending'
             });
             this.showToast('Check-in queued for sync', 'warning');
+            this.addNotification('warning', `Check-in queued: ${member.firstName} ${member.lastName} (pending sync)`);
         } else {
             this.data.checkIns.push(checkIn);
             member.lastVisit = checkIn.timestamp;
@@ -814,6 +827,7 @@ class GymSyncApp {
                 syncStatus: 'pending'
             });
             this.showToast('Booking queued for sync', 'warning');
+            this.addNotification('warning', `Booking queued: ${member.firstName} ${member.lastName} - ${classSession.title} (pending sync)`);
         } else {
             this.data.enrollments.push(enrollment);
             classSession.seatsRemaining--;
@@ -821,7 +835,7 @@ class GymSyncApp {
             this.showToast(`Successfully booked ${member.firstName} for ${classSession.title}`, 'success');
         }
         
-        this.addNotification('success', `Booking: ${member.firstName} ${member.firstName} - ${classSession.title}`);
+        this.addNotification('success', `Booking: ${member.firstName} ${member.lastName} - ${classSession.title}`);
         this.render();
     }
     
@@ -898,6 +912,7 @@ class GymSyncApp {
                 syncStatus: 'pending'
             });
             this.showToast('Sale queued for sync', 'warning');
+            this.addNotification('warning', `Sale queued: ${member.firstName} ${member.lastName} - $${total.toFixed(2)} (pending sync)`);
         } else {
             this.data.sales.push(sale);
             this.savePersistedData();
@@ -927,6 +942,8 @@ class GymSyncApp {
     syncOfflineQueue() {
         if (this.data.offlineQueue.length === 0) return;
         
+        const queueLength = this.data.offlineQueue.length;
+        
         this.data.offlineQueue.forEach(item => {
             switch(item.actionType) {
                 case 'checkin':
@@ -946,7 +963,8 @@ class GymSyncApp {
         
         this.data.offlineQueue = [];
         this.savePersistedData();
-        this.showToast(`Synced ${this.data.offlineQueue.length} items`, 'success');
+        this.showToast(`Synced ${queueLength} items`, 'success');
+        this.addNotification('success', `Sync completed: ${queueLength} items synced`);
         this.render();
     }
     
@@ -1085,6 +1103,19 @@ class GymSyncApp {
         }
         
         this.savePersistedData();
+        this.updateNotificationBadge();
+        
+        // Update notifications screen if it's currently active
+        if (this.state.currentScreen === 'notifications') {
+            this.renderNotifications();
+        }
+    }
+    
+    updateNotificationBadge() {
+        const badge = document.getElementById('notificationBadge');
+        const unreadCount = this.state.notifications.filter(n => !n.read).length;
+        badge.textContent = unreadCount;
+        badge.style.display = unreadCount > 0 ? 'block' : 'none';
     }
     
     showToast(message, type = 'info') {
