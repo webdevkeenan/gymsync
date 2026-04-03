@@ -6,7 +6,8 @@ class GymSyncApp {
             isOffline: false,
             currentScreen: 'dashboard',
             cart: [],
-            notifications: []
+            notifications: [],
+            editingMemberId: null
         };
         
         this.data = {
@@ -329,6 +330,46 @@ class GymSyncApp {
                 e.currentTarget.classList.add('active');
             });
         });
+        
+        // Member modal events
+        document.getElementById('closeMemberModal').addEventListener('click', () => {
+            this.closeMemberModal();
+        });
+        
+        document.getElementById('cancelMemberBtn').addEventListener('click', () => {
+            this.closeMemberModal();
+        });
+        
+        document.getElementById('memberForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveMember();
+        });
+        
+        // Close modal on outside click
+        document.getElementById('memberModal').addEventListener('click', (e) => {
+            if (e.target.id === 'memberModal') {
+                this.closeMemberModal();
+            }
+        });
+        
+        // Member profile modal events
+        document.getElementById('closeMemberProfileModal').addEventListener('click', () => {
+            this.closeMemberProfileModal();
+        });
+        
+        // Profile tabs
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.switchProfileTab(e.currentTarget.dataset.tab);
+            });
+        });
+        
+        // Close profile modal on outside click
+        document.getElementById('memberProfileModal').addEventListener('click', (e) => {
+            if (e.target.id === 'memberProfileModal') {
+                this.closeMemberProfileModal();
+            }
+        });
     }
     
     // Navigation
@@ -539,6 +580,7 @@ class GymSyncApp {
                     <div class="member-card-actions">
                         <button class="btn btn-sm btn-primary" onclick="app.selectMember(${member.id})">Select</button>
                         <button class="btn btn-sm btn-outline" onclick="app.editMember(${member.id})">Edit</button>
+                        <button class="btn btn-sm btn-outline" onclick="app.viewMemberProfile(${member.id})">Profile</button>
                     </div>
                 </div>
             `;
@@ -1160,14 +1202,346 @@ class GymSyncApp {
     }
     
     showAddMemberForm() {
-        // For demo purposes, just show a toast
-        this.showToast('Add member form would open here', 'info');
+        this.state.editingMemberId = null;
+        this.openMemberModal();
     }
     
     editMember(memberId) {
-        // For demo purposes, just show a toast
+        this.state.editingMemberId = memberId;
+        this.openMemberModal(memberId);
+    }
+    
+    openMemberModal(memberId = null) {
+        const modal = document.getElementById('memberModal');
+        const title = document.getElementById('memberModalTitle');
+        const form = document.getElementById('memberForm');
+        
+        // Populate membership plans
+        const planSelect = document.getElementById('memberPlan');
+        planSelect.innerHTML = '<option value="">Select Plan</option>';
+        this.data.membershipPlans.forEach(plan => {
+            planSelect.innerHTML += `<option value="${plan.id}">${plan.name} - ${plan.duration} ($${plan.price})</option>`;
+        });
+        
+        if (memberId) {
+            // Edit mode
+            const member = this.data.members.find(m => m.id === memberId);
+            title.textContent = 'Edit Member';
+            
+            document.getElementById('memberFirstName').value = member.firstName;
+            document.getElementById('memberLastName').value = member.lastName;
+            document.getElementById('memberEmail').value = member.email;
+            document.getElementById('memberPhone').value = member.phone;
+            document.getElementById('memberPlan').value = member.membershipPlanId;
+            document.getElementById('memberStatus').value = member.membershipStatus;
+            document.getElementById('memberAlerts').value = member.alerts.join('\n');
+        } else {
+            // Add mode
+            title.textContent = 'Add Member';
+            form.reset();
+        }
+        
+        modal.classList.add('open');
+    }
+    
+    closeMemberModal() {
+        const modal = document.getElementById('memberModal');
+        modal.classList.remove('open');
+        document.getElementById('memberForm').reset();
+        this.state.editingMemberId = null;
+    }
+    
+    generateMemberId() {
+        // Generate a unique 4-digit ID
+        const existingIds = this.data.members.map(m => m.id);
+        let newId;
+        do {
+            newId = Math.floor(1000 + Math.random() * 9000);
+        } while (existingIds.includes(newId));
+        return newId;
+    }
+    
+    saveMember() {
+        const form = document.getElementById('memberForm');
+        const formData = new FormData(form);
+        
+        const memberData = {
+            firstName: formData.get('firstName').trim(),
+            lastName: formData.get('lastName').trim(),
+            email: formData.get('email').trim(),
+            phone: formData.get('phone').trim(),
+            membershipPlanId: parseInt(formData.get('membershipPlanId')),
+            membershipStatus: formData.get('membershipStatus'),
+            alerts: formData.get('alerts').split('\n').map(alert => alert.trim()).filter(alert => alert.length > 0),
+            lastVisit: new Date().toISOString()
+        };
+        
+        // Validation
+        if (!memberData.firstName || !memberData.lastName || !memberData.email || !memberData.phone) {
+            this.showToast('Please fill in all required fields', 'error');
+            return;
+        }
+        
+        // Check for duplicate email (except when editing the same member)
+        const existingMember = this.data.members.find(m => 
+            m.email === memberData.email && m.id !== this.state.editingMemberId
+        );
+        if (existingMember) {
+            this.showToast('A member with this email already exists', 'error');
+            return;
+        }
+        
+        if (this.state.editingMemberId) {
+            // Update existing member
+            const memberIndex = this.data.members.findIndex(m => m.id === this.state.editingMemberId);
+            this.data.members[memberIndex] = { ...this.data.members[memberIndex], ...memberData };
+            this.showToast(`Member ${memberData.firstName} ${memberData.lastName} updated successfully`, 'success');
+            this.addNotification('info', `Member updated: ${memberData.firstName} ${memberData.lastName}`);
+        } else {
+            // Add new member
+            const newMember = {
+                id: this.generateMemberId(),
+                ...memberData
+            };
+            this.data.members.push(newMember);
+            this.showToast(`Member ${memberData.firstName} ${memberData.lastName} added successfully (ID: ${newMember.id})`, 'success');
+            this.addNotification('success', `New member added: ${memberData.firstName} ${memberData.lastName} (ID: ${newMember.id})`);
+        }
+        
+        this.savePersistedData();
+        this.closeMemberModal();
+        this.renderMembers();
+    }
+    
+    viewMemberProfile(memberId) {
         const member = this.data.members.find(m => m.id === memberId);
-        this.showToast(`Edit form for ${member.firstName} ${member.lastName} would open here`, 'info');
+        if (!member) return;
+        
+        this.openMemberProfileModal(member);
+    }
+    
+    openMemberProfileModal(member) {
+        const modal = document.getElementById('memberProfileModal');
+        const plan = this.data.membershipPlans.find(p => p.id === member.membershipPlanId);
+        
+        // Populate member info
+        document.getElementById('profileMemberId').textContent = `#${member.id.toString().padStart(4, '0')}`;
+        document.getElementById('profileMemberName').textContent = `${member.firstName} ${member.lastName}`;
+        document.getElementById('profileMemberEmail').textContent = member.email;
+        document.getElementById('profileMemberPhone').textContent = member.phone;
+        document.getElementById('profileMemberPlan').textContent = plan ? plan.name : 'Unknown';
+        document.getElementById('profileMemberStatus').textContent = member.membershipStatus;
+        document.getElementById('profileMemberStatus').className = `status-badge ${member.membershipStatus}`;
+        document.getElementById('profileMemberLastVisit').textContent = this.formatDate(member.lastVisit);
+        
+        // Calculate member since (earliest record)
+        const memberSince = this.getMemberSinceDate(member.id);
+        document.getElementById('profileMemberSince').textContent = this.formatDate(memberSince);
+        
+        // Populate alerts
+        const alertsContainer = document.getElementById('profileMemberAlerts');
+        if (member.alerts.length > 0) {
+            alertsContainer.innerHTML = `
+                <h5>Alerts</h5>
+                ${member.alerts.map(alert => `<div class="alert">⚠️ ${alert}</div>`).join('')}
+            `;
+        } else {
+            alertsContainer.innerHTML = '';
+        }
+        
+        // Load tab data
+        this.loadMemberProfileData(member);
+        
+        // Show first tab
+        this.switchProfileTab('checkins');
+        
+        modal.classList.add('open');
+    }
+    
+    closeMemberProfileModal() {
+        const modal = document.getElementById('memberProfileModal');
+        modal.classList.remove('open');
+    }
+    
+    switchProfileTab(tabName) {
+        // Update tab buttons
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+        
+        // Update tab panes
+        document.querySelectorAll('.tab-pane').forEach(pane => {
+            pane.classList.remove('active');
+        });
+        document.getElementById(`${tabName}-tab`).classList.add('active');
+    }
+    
+    loadMemberProfileData(member) {
+        this.loadMemberCheckins(member);
+        this.loadMemberClasses(member);
+        this.loadMemberPurchases(member);
+        this.loadMemberStats(member);
+    }
+    
+    loadMemberCheckins(member) {
+        const memberCheckins = this.data.checkIns.filter(ci => ci.memberId === member.id);
+        const container = document.getElementById('memberCheckinsList');
+        
+        document.getElementById('totalCheckins').textContent = `${memberCheckins.length} total check-ins`;
+        
+        if (memberCheckins.length === 0) {
+            container.innerHTML = '<p class="no-data">No check-ins recorded</p>';
+            return;
+        }
+        
+        const checkinsHtml = memberCheckins
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+            .slice(0, 20)
+            .map(checkin => `
+                <div class="checkin-item">
+                    <div class="item-info">
+                        <div class="item-title">Check-in</div>
+                        <div class="item-details">Status: ${checkin.status}</div>
+                    </div>
+                    <div class="item-time">${this.formatDateTime(checkin.timestamp)}</div>
+                </div>
+            `).join('');
+        
+        container.innerHTML = checkinsHtml;
+    }
+    
+    loadMemberClasses(member) {
+        const memberEnrollments = this.data.enrollments.filter(e => e.memberId === member.id);
+        const container = document.getElementById('memberClassesList');
+        
+        document.getElementById('totalClasses').textContent = `${memberEnrollments.length} total classes`;
+        
+        if (memberEnrollments.length === 0) {
+            container.innerHTML = '<p class="no-data">No class bookings recorded</p>';
+            return;
+        }
+        
+        const classesHtml = memberEnrollments
+            .sort((a, b) => new Date(b.bookedAt) - new Date(a.bookedAt))
+            .slice(0, 20)
+            .map(enrollment => {
+                const classSession = this.data.classes.find(c => c.id === enrollment.classSessionId);
+                return `
+                    <div class="class-item">
+                        <div class="item-info">
+                            <div class="item-title">${classSession ? classSession.title : 'Unknown Class'}</div>
+                            <div class="item-details">
+                                ${classSession ? `with ${classSession.instructor}` : ''} • 
+                                Status: ${enrollment.status}
+                            </div>
+                        </div>
+                        <div class="item-time">
+                            Booked: ${this.formatDateTime(enrollment.bookedAt)}
+                            ${classSession ? `<br>Scheduled: ${this.formatDateTime(classSession.dateTime)}` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        
+        container.innerHTML = classesHtml;
+    }
+    
+    loadMemberPurchases(member) {
+        const memberSales = this.data.sales.filter(s => s.memberId === member.id);
+        const container = document.getElementById('memberPurchasesList');
+        
+        const totalSpent = memberSales.reduce((sum, sale) => sum + sale.total, 0);
+        document.getElementById('totalPurchases').textContent = `${memberSales.length} total purchases`;
+        document.getElementById('totalSpent').textContent = `$${totalSpent.toFixed(2)} total spent`;
+        
+        if (memberSales.length === 0) {
+            container.innerHTML = '<p class="no-data">No purchases recorded</p>';
+            return;
+        }
+        
+        const purchasesHtml = memberSales
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+            .slice(0, 20)
+            .map(sale => `
+                <div class="purchase-item">
+                    <div class="item-info">
+                        <div class="item-title">$${sale.total.toFixed(2)} • ${sale.paymentMethod}</div>
+                        <div class="item-details">
+                            ${sale.items.length} item${sale.items.length !== 1 ? 's' : ''}
+                        </div>
+                    </div>
+                    <div class="item-time">${this.formatDateTime(sale.createdAt)}</div>
+                </div>
+            `).join('');
+        
+        container.innerHTML = purchasesHtml;
+    }
+    
+    loadMemberStats(member) {
+        const memberCheckins = this.data.checkIns.filter(ci => ci.memberId === member.id);
+        const memberEnrollments = this.data.enrollments.filter(e => e.memberId === member.id);
+        const memberSales = this.data.sales.filter(s => s.memberId === member.id);
+        
+        const totalSpent = memberSales.reduce((sum, sale) => sum + sale.total, 0);
+        const memberSince = this.getMemberSinceDate(member.id);
+        const membershipDays = Math.floor((new Date() - new Date(memberSince)) / (1000 * 60 * 60 * 24));
+        
+        // Calculate visit frequency
+        const weeksActive = Math.max(1, Math.floor(membershipDays / 7));
+        const visitsPerWeek = (memberCheckins.length / weeksActive).toFixed(1);
+        
+        // Find most visited day
+        const mostVisitedDay = this.getMostVisitedDay(memberCheckins);
+        
+        // Update stats
+        document.getElementById('statCheckins').textContent = memberCheckins.length;
+        document.getElementById('statClasses').textContent = memberEnrollments.length;
+        document.getElementById('statSpent').textContent = `$${totalSpent.toFixed(2)}`;
+        document.getElementById('statFrequency').textContent = `${visitsPerWeek}/week`;
+        document.getElementById('statDay').textContent = mostVisitedDay;
+        document.getElementById('statDuration').textContent = `${membershipDays} days`;
+    }
+    
+    getMemberSinceDate(memberId) {
+        const memberCheckins = this.data.checkIns.filter(ci => ci.memberId === memberId);
+        const memberEnrollments = this.data.enrollments.filter(e => e.memberId === memberId);
+        const memberSales = this.data.sales.filter(s => s.memberId === memberId);
+        
+        const dates = [
+            ...memberCheckins.map(ci => new Date(ci.timestamp)),
+            ...memberEnrollments.map(e => new Date(e.bookedAt)),
+            ...memberSales.map(s => new Date(s.createdAt))
+        ];
+        
+        if (dates.length === 0) {
+            return new Date(); // Default to today if no records
+        }
+        
+        return new Date(Math.min(...dates));
+    }
+    
+    getMostVisitedDay(checkins) {
+        if (checkins.length === 0) return '-';
+        
+        const dayCounts = {};
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        
+        checkins.forEach(checkin => {
+            const day = new Date(checkin.timestamp).getDay();
+            dayCounts[day] = (dayCounts[day] || 0) + 1;
+        });
+        
+        const mostVisitedDayNum = Object.keys(dayCounts).reduce((a, b) => 
+            dayCounts[a] > dayCounts[b] ? a : b
+        );
+        
+        return days[mostVisitedDayNum];
+    }
+    
+    formatDateTime(timestamp) {
+        const date = new Date(timestamp);
+        return date.toLocaleString();
     }
     
     resetDemoData() {

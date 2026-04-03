@@ -273,7 +273,195 @@
         </main>
     </div>
 
-    <!-- Toast Container -->
+    <!-- Member Profile Modal -->
+<div class="modal" id="memberProfileModal">
+    <div class="modal-content modal-large">
+        <div class="modal-header">
+            <h3 id="memberProfileTitle">Member Profile</h3>
+            <button class="modal-close" id="closeMemberProfileModal">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="member-profile-content">
+                <!-- Member Info Section -->
+                <div class="profile-section">
+                    <h4>Member Information</h4>
+                    <div class="member-info-grid">
+                        <div class="info-item">
+                            <label>Member ID:</label>
+                            <span id="profileMemberId"></span>
+                        </div>
+                        <div class="info-item">
+                            <label>Name:</label>
+                            <span id="profileMemberName"></span>
+                        </div>
+                        <div class="info-item">
+                            <label>Email:</label>
+                            <span id="profileMemberEmail"></span>
+                        </div>
+                        <div class="info-item">
+                            <label>Phone:</label>
+                            <span id="profileMemberPhone"></span>
+                        </div>
+                        <div class="info-item">
+                            <label>Membership Plan:</label>
+                            <span id="profileMemberPlan"></span>
+                        </div>
+                        <div class="info-item">
+                            <label>Status:</label>
+                            <span id="profileMemberStatus" class="status-badge"></span>
+                        </div>
+                        <div class="info-item">
+                            <label>Last Visit:</label>
+                            <span id="profileMemberLastVisit"></span>
+                        </div>
+                        <div class="info-item">
+                            <label>Member Since:</label>
+                            <span id="profileMemberSince"></span>
+                        </div>
+                    </div>
+                    <div class="profile-alerts" id="profileMemberAlerts"></div>
+                </div>
+
+                <!-- Tabs Navigation -->
+                <div class="profile-tabs">
+                    <button class="tab-btn active" data-tab="checkins">Check-ins</button>
+                    <button class="tab-btn" data-tab="classes">Classes</button>
+                    <button class="tab-btn" data-tab="purchases">Purchases</button>
+                    <button class="tab-btn" data-tab="stats">Statistics</button>
+                </div>
+
+                <!-- Tab Content -->
+                <div class="tab-content">
+                    <!-- Check-ins Tab -->
+                    <div class="tab-pane active" id="checkins-tab">
+                        <div class="tab-header">
+                            <h5>Check-in History</h5>
+                            <div class="tab-summary">
+                                <span id="totalCheckins">0 total check-ins</span>
+                            </div>
+                        </div>
+                        <div class="checkins-list" id="memberCheckinsList">
+                            <!-- Check-ins will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Classes Tab -->
+                    <div class="tab-pane" id="classes-tab">
+                        <div class="tab-header">
+                            <h5>Class Bookings</h5>
+                            <div class="tab-summary">
+                                <span id="totalClasses">0 total classes</span>
+                            </div>
+                        </div>
+                        <div class="classes-list" id="memberClassesList">
+                            <!-- Classes will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Purchases Tab -->
+                    <div class="tab-pane" id="purchases-tab">
+                        <div class="tab-header">
+                            <h5>Purchase History</h5>
+                            <div class="tab-summary">
+                                <span id="totalPurchases">0 total purchases</span>
+                                <span id="totalSpent">$0.00 total spent</span>
+                            </div>
+                        </div>
+                        <div class="purchases-list" id="memberPurchasesList">
+                            <!-- Purchases will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Statistics Tab -->
+                    <div class="tab-pane" id="stats-tab">
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-label">Total Check-ins</div>
+                                <div class="stat-value" id="statCheckins">0</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Classes Attended</div>
+                                <div class="stat-value" id="statClasses">0</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Total Spent</div>
+                                <div class="stat-value" id="statSpent">$0.00</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Avg Visit Frequency</div>
+                                <div class="stat-value" id="statFrequency">0/week</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Most Visited Day</div>
+                                <div class="stat-value" id="statDay">-</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Membership Duration</div>
+                                <div class="stat-value" id="statDuration">0 days</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal" id="memberModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="memberModalTitle">Add Member</h3>
+            <button class="modal-close" id="closeMemberModal">×</button>
+        </div>
+        <div class="modal-body">
+            <form id="memberForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="memberFirstName">First Name *</label>
+                        <input type="text" id="memberFirstName" name="firstName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="memberLastName">Last Name *</label>
+                        <input type="text" id="memberLastName" name="lastName" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="memberEmail">Email *</label>
+                        <input type="email" id="memberEmail" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="memberPhone">Phone *</label>
+                        <input type="tel" id="memberPhone" name="phone" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="memberPlan">Membership Plan *</label>
+                        <select id="memberPlan" name="membershipPlanId" required>
+                            <option value="">Select Plan</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="memberStatus">Membership Status *</label>
+                        <select id="memberStatus" name="membershipStatus" required>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="expired">Expired</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="memberAlerts">Alerts (one per line)</label>
+                    <textarea id="memberAlerts" name="alerts" rows="3" placeholder="Enter alerts, one per line..."></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-outline" id="cancelMemberBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="saveMemberBtn">Save Member</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
     <div class="toast-container" id="toastContainer"></div>
 
     <script src="script.js"></script>
