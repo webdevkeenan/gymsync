@@ -209,6 +209,7 @@
                                 <button class="category-btn" data-category="supplements">Supplements</button>
                                 <button class="category-btn" data-category="merchandise">Merchandise</button>
                                 <button class="category-btn" data-category="services">Services</button>
+                                <button class="category-btn" data-category="memberships">Memberships</button>
                             </div>
                             <div class="products-grid" id="productsGrid">
                                 <!-- Product cards will be populated here -->
@@ -273,7 +274,80 @@
         </main>
     </div>
 
-    <!-- Member Profile Modal -->
+    <!-- Refund Modal -->
+<div class="modal" id="refundModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Process Refund</h3>
+            <button class="modal-close" id="closeRefundModal">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="refund-info">
+                <h4>Original Sale Information</h4>
+                <div class="sale-details" id="refundSaleDetails">
+                    <!-- Sale details will be populated here -->
+                </div>
+            </div>
+            
+            <form id="refundForm">
+                <div class="form-group">
+                    <label for="refundReason">Refund Reason *</label>
+                    <select id="refundReason" name="reason" required>
+                        <option value="">Select Reason</option>
+                        <option value="customer_request">Customer Request</option>
+                        <option value="service_issue">Service Issue</option>
+                        <option value="product_defect">Product Defect</option>
+                        <option value="overcharge">Overcharge</option>
+                        <option value="duplicate_charge">Duplicate Charge</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="refundReasonDetails" style="display: none;">
+                    <label for="refundReasonText">Please specify reason *</label>
+                    <textarea id="refundReasonText" name="reasonText" rows="3" placeholder="Enter detailed reason..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="refundAmount">Refund Amount *</label>
+                    <input type="number" id="refundAmount" name="amount" step="0.01" min="0" required>
+                    <div class="amount-info" id="refundAmountInfo"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="refundMethod">Refund Method *</label>
+                    <select id="refundMethod" name="refundMethod" required>
+                        <option value="">Select Method</option>
+                        <option value="cash">Cash</option>
+                        <option value="card">Credit Card</option>
+                        <option value="store_credit">Store Credit</option>
+                    </select>
+                </div>
+                
+                <div class="refund-summary">
+                    <h4>Refund Summary</h4>
+                    <div class="summary-item">
+                        <label>Original Amount:</label>
+                        <span id="originalAmount">$0.00</span>
+                    </div>
+                    <div class="summary-item">
+                        <label>Refund Amount:</label>
+                        <span id="summaryRefundAmount">$0.00</span>
+                    </div>
+                    <div class="summary-item">
+                        <label>Refund Method:</label>
+                        <span id="summaryRefundMethod">-</span>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-outline" id="cancelRefundBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="processRefundBtn">Process Refund</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 <div class="modal" id="memberProfileModal">
     <div class="modal-content modal-large">
         <div class="modal-header">
@@ -284,42 +358,49 @@
             <div class="member-profile-content">
                 <!-- Member Info Section -->
                 <div class="profile-section">
-                    <h4>Member Information</h4>
-                    <div class="member-info-grid">
-                        <div class="info-item">
-                            <label>Member ID:</label>
+                    <div class="profile-header">
+                        <div class="profile-info">
+                            <h3 id="profileMemberName"></h3>
+                            <p id="profileMemberEmail"></p>
+                            <p id="profileMemberPhone"></p>
+                        </div>
+                    </div>
+                    <div class="profile-details-grid">
+                        <div class="detail-item">
+                            <label>Member ID</label>
                             <span id="profileMemberId"></span>
                         </div>
-                        <div class="info-item">
-                            <label>Name:</label>
-                            <span id="profileMemberName"></span>
-                        </div>
-                        <div class="info-item">
-                            <label>Email:</label>
-                            <span id="profileMemberEmail"></span>
-                        </div>
-                        <div class="info-item">
-                            <label>Phone:</label>
-                            <span id="profileMemberPhone"></span>
-                        </div>
-                        <div class="info-item">
-                            <label>Membership Plan:</label>
+                        <div class="detail-item">
+                            <label>Membership Plan</label>
                             <span id="profileMemberPlan"></span>
                         </div>
-                        <div class="info-item">
-                            <label>Status:</label>
+                        <div class="detail-item">
+                            <label>Membership Status</label>
                             <span id="profileMemberStatus" class="status-badge"></span>
                         </div>
-                        <div class="info-item">
-                            <label>Last Visit:</label>
+                        <div class="detail-item">
+                            <label>Account Status</label>
+                            <span id="profileAccountStatus" class="status-badge"></span>
+                        </div>
+                        <div class="detail-item">
+                            <label>Membership Expiry</label>
+                            <span id="profileMemberExpiry"></span>
+                        </div>
+                        <div class="detail-item">
+                            <label>Last Visit</label>
                             <span id="profileMemberLastVisit"></span>
                         </div>
-                        <div class="info-item">
-                            <label>Member Since:</label>
+                        <div class="detail-item">
+                            <label>Member Since</label>
                             <span id="profileMemberSince"></span>
                         </div>
                     </div>
                     <div class="profile-alerts" id="profileMemberAlerts"></div>
+                    <div class="profile-actions">
+                        <button class="btn btn-outline" id="editProfileMemberBtn">Edit Member</button>
+                        <button class="btn btn-outline" id="freezeAccountBtn">Freeze Account</button>
+                        <button class="btn btn-outline" id="unfreezeAccountBtn" style="display: none;">Unfreeze Account</button>
+                    </div>
                 </div>
 
                 <!-- Tabs Navigation -->
@@ -434,16 +515,16 @@
                         <input type="tel" id="memberPhone" name="phone" required>
                     </div>
                 </div>
-                <div class="form-row">
+                <div class="form-row" id="planFieldsRow" style="display: none;">
                     <div class="form-group">
-                        <label for="memberPlan">Membership Plan *</label>
-                        <select id="memberPlan" name="membershipPlanId" required>
+                        <label for="memberPlan">Membership Plan</label>
+                        <select id="memberPlan" name="membershipPlanId">
                             <option value="">Select Plan</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="memberStatus">Membership Status *</label>
-                        <select id="memberStatus" name="membershipStatus" required>
+                        <label for="memberStatus">Membership Status</label>
+                        <select id="memberStatus" name="membershipStatus">
                             <option value="active">Active</option>
                             <option value="inactive">Inactive</option>
                             <option value="expired">Expired</option>

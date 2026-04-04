@@ -7,7 +7,8 @@ class GymSyncApp {
             currentScreen: 'dashboard',
             cart: [],
             notifications: [],
-            editingMemberId: null
+            editingMemberId: null,
+            currentRefundSale: null
         };
         
         this.data = {
@@ -18,6 +19,7 @@ class GymSyncApp {
             enrollments: [],
             products: [],
             sales: [],
+            refunds: [],
             offlineQueue: []
         };
         
@@ -52,6 +54,12 @@ class GymSyncApp {
                 phone: '555-0101',
                 membershipPlanId: 2,
                 membershipStatus: 'active',
+                membershipExpiry: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+                paymentStatus: 'paid',
+                accountStatus: 'active',
+                isBanned: false,
+                isFrozen: false,
+                freezeReason: null,
                 alerts: [],
                 lastVisit: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
             },
@@ -63,7 +71,13 @@ class GymSyncApp {
                 phone: '555-0102',
                 membershipPlanId: 3,
                 membershipStatus: 'active',
-                alerts: ['Payment due in 5 days'],
+                membershipExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+                paymentStatus: 'overdue',
+                accountStatus: 'active',
+                isBanned: false,
+                isFrozen: false,
+                freezeReason: null,
+                alerts: ['Payment overdue - Please settle balance'],
                 lastVisit: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
             },
             {
@@ -74,7 +88,13 @@ class GymSyncApp {
                 phone: '555-0103',
                 membershipPlanId: 1,
                 membershipStatus: 'expired',
-                alerts: ['Membership expired', 'Payment overdue'],
+                membershipExpiry: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+                paymentStatus: 'none',
+                accountStatus: 'active',
+                isBanned: false,
+                isFrozen: false,
+                freezeReason: null,
+                alerts: ['Membership expired'],
                 lastVisit: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
             },
             {
@@ -83,8 +103,14 @@ class GymSyncApp {
                 lastName: 'Williams',
                 email: 'sarah.w@email.com',
                 phone: '555-0104',
-                membershipPlanId: 2,
-                membershipStatus: 'active',
+                membershipPlanId: null,
+                membershipStatus: 'new',
+                membershipExpiry: null,
+                paymentStatus: 'none',
+                accountStatus: 'active',
+                isBanned: false,
+                isFrozen: false,
+                freezeReason: null,
                 alerts: [],
                 lastVisit: new Date().toISOString()
             },
@@ -94,8 +120,14 @@ class GymSyncApp {
                 lastName: 'Brown',
                 email: 'tom.brown@email.com',
                 phone: '555-0105',
-                membershipPlanId: 1,
-                membershipStatus: 'inactive',
+                membershipPlanId: null,
+                membershipStatus: 'new',
+                membershipExpiry: null,
+                paymentStatus: 'none',
+                accountStatus: 'frozen',
+                isBanned: false,
+                isFrozen: true,
+                freezeReason: 'Account frozen by request',
                 alerts: ['Account frozen'],
                 lastVisit: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString()
             }
@@ -146,17 +178,57 @@ class GymSyncApp {
             { id: 5, name: 'Personal Training', price: 49.99, category: 'services' },
             { id: 6, name: 'Yoga Mat', price: 24.99, category: 'merchandise' },
             { id: 7, name: 'Pre-Workout', price: 34.99, category: 'supplements' },
-            { id: 8, name: 'Gym Bag', price: 39.99, category: 'merchandise' }
+            { id: 8, name: 'Gym Bag', price: 39.99, category: 'merchandise' },
+            { id: 101, name: 'Basic Membership - 1 month', price: 29.99, category: 'memberships', type: 'membership', planId: 1 },
+            { id: 102, name: 'Premium Membership - 3 months', price: 79.99, category: 'memberships', type: 'membership', planId: 2 },
+            { id: 103, name: 'VIP Membership - 12 months', price: 299.99, category: 'memberships', type: 'membership', planId: 3 }
         ];
         
         // Generate some initial data
         this.generateInitialData();
     }
     
+    updateMemberStatus(member) {
+        // Update membership status (based on membership plan)
+        if (!member.membershipPlanId) {
+            member.membershipStatus = 'new';
+            member.paymentStatus = 'none';
+            member.membershipExpiry = null; // No expiry without membership
+        } else {
+            // Has membership - check expiry and payment
+            const hasValidMembership = member.membershipExpiry && new Date(member.membershipExpiry) > new Date();
+            
+            if (!hasValidMembership) {
+                member.membershipStatus = 'expired';
+            } else if (member.paymentStatus === 'overdue') {
+                member.membershipStatus = 'inactive'; // Inactive due to payment
+            } else if (member.paymentStatus === 'paid') {
+                member.membershipStatus = 'active';
+            } else {
+                member.membershipStatus = 'inactive';
+                member.paymentStatus = 'none';
+            }
+        }
+        
+        // Update account status (based on account conditions)
+        if (member.isBanned) {
+            member.accountStatus = 'banned';
+        } else if (member.isFrozen) {
+            member.accountStatus = 'frozen';
+        } else {
+            member.accountStatus = 'active';
+        }
+    }
+    
     generateInitialData() {
         // Generate some check-ins
         const today = new Date();
         today.setHours(0, 0, 0, 0);
+        
+        // Update all member statuses based on current conditions
+        this.data.members.forEach(member => {
+            this.updateMemberStatus(member);
+        });
         
         for (let i = 0; i < 15; i++) {
             const checkInTime = new Date(today.getTime() + Math.random() * 12 * 60 * 60 * 1000);
@@ -364,10 +436,65 @@ class GymSyncApp {
             });
         });
         
+        // Profile action buttons
+        document.getElementById('editProfileMemberBtn').addEventListener('click', () => {
+            const member = this.getCurrentProfileMember();
+            if (member) {
+                this.closeMemberProfileModal();
+                this.editMember(member.id);
+            }
+        });
+        
+        document.getElementById('freezeAccountBtn').addEventListener('click', () => {
+            this.freezeAccount();
+        });
+        
+        document.getElementById('unfreezeAccountBtn').addEventListener('click', () => {
+            this.unfreezeAccount();
+        });
+        
         // Close profile modal on outside click
         document.getElementById('memberProfileModal').addEventListener('click', (e) => {
             if (e.target.id === 'memberProfileModal') {
                 this.closeMemberProfileModal();
+            }
+        });
+        
+        // Refund modal events
+        document.getElementById('closeRefundModal').addEventListener('click', () => {
+            this.closeRefundModal();
+        });
+        
+        document.getElementById('cancelRefundBtn').addEventListener('click', () => {
+            this.closeRefundModal();
+        });
+        
+        document.getElementById('refundForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.processRefund();
+        });
+        
+        document.getElementById('refundReason').addEventListener('change', (e) => {
+            const detailsField = document.getElementById('refundReasonDetails');
+            if (e.target.value === 'other') {
+                detailsField.style.display = 'block';
+            } else {
+                detailsField.style.display = 'none';
+            }
+        });
+        
+        document.getElementById('refundAmount').addEventListener('input', (e) => {
+            this.updateRefundSummary();
+        });
+        
+        document.getElementById('refundMethod').addEventListener('change', () => {
+            this.updateRefundSummary();
+        });
+        
+        // Close refund modal on outside click
+        document.getElementById('refundModal').addEventListener('click', (e) => {
+            if (e.target.id === 'refundModal') {
+                this.closeRefundModal();
             }
         });
     }
@@ -445,6 +572,13 @@ class GymSyncApp {
         }
         
         const plan = this.data.membershipPlans.find(p => p.id === member.membershipPlanId);
+        
+        // Determine the effective status (what actually matters for access)
+        let effectiveStatus = member.accountStatus || 'active';
+        if (member.accountStatus === 'active') {
+            effectiveStatus = member.membershipStatus || 'new';
+        }
+        
         const alertsHtml = member.alerts.length > 0 
             ? `<div class="member-alerts">
                  ${member.alerts.map(alert => `<div class="alert">⚠️ ${alert}</div>`).join('')}
@@ -456,8 +590,8 @@ class GymSyncApp {
                 <div class="member-name">${member.firstName} ${member.lastName}</div>
                 <div class="member-details">
                     <div>ID: #${member.id.toString().padStart(4, '0')}</div>
-                    <div>Plan: ${plan ? plan.name : 'Unknown'}</div>
-                    <div class="member-status ${member.membershipStatus}">${member.membershipStatus}</div>
+                    <div>Plan: ${plan ? plan.name : 'No Plan'}</div>
+                    <div class="member-status ${effectiveStatus}">${effectiveStatus}</div>
                 </div>
                 ${alertsHtml}
                 <div class="member-actions">
@@ -466,6 +600,29 @@ class GymSyncApp {
                 </div>
             </div>
         `;
+    }
+    
+    // Navigation
+    navigateToScreen(screenName) {
+        this.state.currentScreen = screenName;
+        this.render();
+        
+        // Update navigation active state
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.screen === screenName) {
+                btn.classList.add('active');
+            }
+        });
+        
+        // Update screen visibility - only hide screens that aren't the target
+        document.querySelectorAll('.screen').forEach(screen => {
+            if (screen.id === `${screenName}Screen`) {
+                screen.classList.remove('hidden');
+            } else {
+                screen.classList.add('hidden');
+            }
+        });
     }
     
     // Screen Rendering
@@ -510,20 +667,21 @@ class GymSyncApp {
             .filter(s => new Date(s.createdAt) >= today)
             .reduce((sum, s) => sum + s.total, 0);
         
-        const activeMembers = this.data.members.filter(m => m.membershipStatus === 'active').length;
+        const activeMembers = this.data.members.filter(m => m.membershipStatus === 'active' && m.accountStatus === 'active').length;
         const upcomingClasses = this.data.classes.filter(c => 
-            new Date(c.dateTime) > new Date() && 
-            new Date(c.dateTime) < new Date(Date.now() + 24 * 60 * 60 * 1000)
+            new Date(c.dateTime || c.startTime) > new Date() && 
+            new Date(c.dateTime || c.startTime) < new Date(Date.now() + 24 * 60 * 60 * 1000)
         ).length;
         
+        // Update stat displays
         document.getElementById('todayCheckins').textContent = todayCheckIns;
         document.getElementById('upcomingClasses').textContent = upcomingClasses;
         document.getElementById('salesToday').textContent = `$${todaySales.toFixed(2)}`;
         document.getElementById('activeMembers').textContent = activeMembers;
         
         // Render recent activity
-        const recentActivity = this.getRecentActivity();
-        const activityHtml = recentActivity.slice(0, 5).map(activity => `
+        const activities = this.getRecentActivity();
+        const activityHtml = activities.slice(0, 5).map(activity => `
             <div class="activity-item">
                 <div class="activity-icon ${activity.type}">${activity.icon}</div>
                 <div class="activity-details">
@@ -565,16 +723,23 @@ class GymSyncApp {
         
         const membersHtml = members.map(member => {
             const plan = this.data.membershipPlans.find(p => p.id === member.membershipPlanId);
+            
+            // Determine the effective status (what actually matters for access)
+            let effectiveStatus = member.accountStatus || 'active';
+            if (member.accountStatus === 'active') {
+                effectiveStatus = member.membershipStatus || 'new';
+            }
+            
             return `
                 <div class="member-card">
                     <div class="member-card-header">
                         <div class="member-card-name">${member.firstName} ${member.lastName}</div>
-                        <div class="member-status ${member.membershipStatus}">${member.membershipStatus}</div>
+                        <div class="member-status ${effectiveStatus}">${effectiveStatus}</div>
                     </div>
                     <div class="member-card-details">
                         <div class="member-detail"><strong>Email:</strong> ${member.email}</div>
                         <div class="member-detail"><strong>Phone:</strong> ${member.phone}</div>
-                        <div class="member-detail"><strong>Plan:</strong> ${plan ? plan.name : 'Unknown'}</div>
+                        <div class="member-detail"><strong>Plan:</strong> ${plan ? plan.name : 'No Plan'}</div>
                         <div class="member-detail"><strong>Last Visit:</strong> ${this.formatDate(member.lastVisit)}</div>
                     </div>
                     <div class="member-card-actions">
@@ -601,13 +766,13 @@ class GymSyncApp {
         }
         
         const plan = this.data.membershipPlans.find(p => p.id === member.membershipPlanId);
-        const canCheckIn = member.membershipStatus === 'active';
+        const canCheckIn = member.membershipStatus === 'active' && member.accountStatus === 'active';
         
         container.innerHTML = `
             <div class="checkin-member-details">
                 <div class="checkin-member-info">
                     <div class="checkin-member-name">${member.firstName} ${member.lastName}</div>
-                    <div class="checkin-member-plan">Plan: ${plan ? plan.name : 'Unknown'}</div>
+                    <div class="checkin-member-plan">Plan: ${plan ? plan.name : 'No Plan'}</div>
                     <div class="checkin-member-status ${member.membershipStatus}">${member.membershipStatus}</div>
                     <div class="checkin-member-last">Last Visit: ${this.formatDate(member.lastVisit)}</div>
                 </div>
@@ -625,7 +790,18 @@ class GymSyncApp {
         confirmBtn.disabled = !canCheckIn;
         
         if (!canCheckIn) {
-            confirmBtn.textContent = member.membershipStatus === 'expired' ? 'Membership Expired' : 'Cannot Check In';
+            let reason = 'Cannot Check In';
+            if (member.accountStatus === 'frozen') {
+                reason = 'Account Frozen';
+            } else if (member.accountStatus === 'banned') {
+                reason = 'Account Banned';
+            } else if (member.membershipStatus === 'expired') {
+                reason = 'Membership Expired';
+            } else if (member.membershipStatus === 'inactive') {
+                reason = 'Membership Inactive';
+            }
+            
+            confirmBtn.textContent = reason;
             confirmBtn.classList.remove('btn-primary');
             confirmBtn.classList.add('btn-secondary');
         } else {
@@ -647,12 +823,12 @@ class GymSyncApp {
             today.setHours(0, 0, 0, 0);
             const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
             classes = classes.filter(c => {
-                const classDate = new Date(c.dateTime);
+                const classDate = new Date(c.dateTime || c.startTime); // Fix: Handle both field names
                 return classDate >= today && classDate < tomorrow;
             });
         } else if (filter === 'week') {
             const weekFromNow = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-            classes = classes.filter(c => new Date(c.dateTime) <= weekFromNow);
+            classes = classes.filter(c => new Date(c.dateTime || c.startTime) <= weekFromNow); // Fix: Handle both field names
         }
         
         const classesHtml = classes.map(classSession => {
@@ -666,8 +842,8 @@ class GymSyncApp {
                         <div class="class-instructor">with ${classSession.instructor}</div>
                     </div>
                     <div class="class-details">
-                        <div class="class-detail"><strong>Date:</strong> ${this.formatDate(classSession.dateTime)}</div>
-                        <div class="class-detail"><strong>Time:</strong> ${this.formatTime(classSession.dateTime)}</div>
+                        <div class="class-detail"><strong>Date:</strong> ${this.formatDate(classSession.dateTime || classSession.startTime)}</div>
+                        <div class="class-detail"><strong>Time:</strong> ${this.formatTime(classSession.dateTime || classSession.startTime)}</div>
                     </div>
                     <div class="class-capacity">
                         <span class="capacity-text">${classSession.capacity - classSession.seatsRemaining}/${classSession.capacity}</span>
@@ -799,7 +975,21 @@ class GymSyncApp {
     // Business Logic
     confirmCheckIn() {
         const member = this.getSelectedMember();
-        if (!member || member.membershipStatus !== 'active') return;
+        if (!member) {
+            this.showToast('Please select a member first', 'warning');
+            return;
+        }
+        
+        // Check both membership status and account status
+        if (member.membershipStatus !== 'active') {
+            this.showToast(`Cannot check-in: Membership status is ${member.membershipStatus}`, 'error');
+            return;
+        }
+        
+        if (member.accountStatus !== 'active') {
+            this.showToast(`Cannot check-in: Account status is ${member.accountStatus}`, 'error');
+            return;
+        }
         
         const checkIn = {
             id: Date.now(),
@@ -836,19 +1026,31 @@ class GymSyncApp {
             return;
         }
         
-        const classSession = this.data.classes.find(c => c.id === classSessionId);
-        if (!classSession || classSession.seatsRemaining === 0) {
-            this.showToast('Class is full', 'error');
+        // Check both membership status and account status
+        if (member.membershipStatus !== 'active') {
+            this.showToast(`Cannot book class: Membership status is ${member.membershipStatus}`, 'error');
             return;
         }
         
-        // Check if already enrolled
-        const alreadyEnrolled = this.data.enrollments.some(e => 
+        if (member.accountStatus !== 'active') {
+            this.showToast(`Cannot book class: Account status is ${member.accountStatus}`, 'error');
+            return;
+        }
+        
+        const classSession = this.data.classes.find(c => c.id === classSessionId);
+        if (!classSession) return;
+        
+        if (classSession.seatsRemaining <= 0) {
+            this.showToast('No seats available for this class', 'error');
+            return;
+        }
+        
+        // Check if already booked
+        const existingBooking = this.data.enrollments.find(e => 
             e.memberId === member.id && e.classSessionId === classSessionId
         );
-        
-        if (alreadyEnrolled) {
-            this.showToast('Already enrolled in this class', 'warning');
+        if (existingBooking) {
+            this.showToast('Already booked for this class', 'warning');
             return;
         }
         
@@ -857,7 +1059,7 @@ class GymSyncApp {
             memberId: member.id,
             classSessionId,
             bookedAt: new Date().toISOString(),
-            status: this.state.isOffline ? 'pending' : 'booked'
+            status: this.state.isOffline ? 'pending' : 'confirmed'
         };
         
         if (this.state.isOffline) {
@@ -918,14 +1120,21 @@ class GymSyncApp {
             return;
         }
         
-        const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
+        const paymentMethodInput = document.querySelector('input[name="payment"]:checked');
+        if (!paymentMethodInput) {
+            this.showToast('Please select a payment method', 'error');
+            return;
+        }
+        const paymentMethod = paymentMethodInput.value;
         
         const items = this.state.cart.map(item => {
             const product = this.data.products.find(p => p.id === item.productId);
             return {
                 productId: product.id,
                 quantity: item.quantity,
-                price: product.price
+                price: product.price,
+                name: product.name,
+                type: product.type || 'product'
             };
         });
         
@@ -957,6 +1166,13 @@ class GymSyncApp {
             this.addNotification('warning', `Sale queued: ${member.firstName} ${member.lastName} - $${total.toFixed(2)} (pending sync)`);
         } else {
             this.data.sales.push(sale);
+            
+            // Process membership purchases if any
+            const membershipItems = items.filter(item => item.type === 'membership');
+            if (membershipItems.length > 0) {
+                this.processMembershipItems(member, membershipItems);
+            }
+            
             this.savePersistedData();
             this.showToast(`Sale completed for ${member.firstName} ${member.lastName} - $${total.toFixed(2)}`, 'success');
         }
@@ -964,6 +1180,41 @@ class GymSyncApp {
         this.addNotification('success', `Sale: ${member.firstName} ${member.lastName} - $${total.toFixed(2)}`);
         this.state.cart = [];
         this.render();
+    }
+    
+    processMembershipItems(member, membershipItems) {
+        membershipItems.forEach(item => {
+            const product = this.data.products.find(p => p.id === item.productId);
+            if (product && product.type === 'membership' && product.planId) {
+                const plan = this.data.membershipPlans.find(p => p.id === product.planId);
+                if (plan) {
+                    // Update member's membership
+                    member.membershipPlanId = product.planId;
+                    
+                    // Calculate and store membership expiry date
+                    const startDate = new Date();
+                    const endDate = this.calculateMembershipEndDate(startDate, plan.duration);
+                    member.membershipExpiry = endDate.toISOString();
+                    
+                    // Set payment status to paid (membership just purchased)
+                    member.paymentStatus = 'paid';
+                    
+                    // Update status using the centralized function
+                    this.updateMemberStatus(member);
+                    
+                    // Clear membership-related alerts
+                    member.alerts = member.alerts.filter(alert => 
+                        !alert.toLowerCase().includes('expired') && 
+                        !alert.toLowerCase().includes('payment') &&
+                        !alert.toLowerCase().includes('membership') &&
+                        !alert.toLowerCase().includes('no active membership') &&
+                        !alert.toLowerCase().includes('payment overdue')
+                    );
+                    
+                    this.addNotification('success', `Membership updated: ${member.firstName} ${member.lastName} - ${plan.name}`);
+                }
+            }
+        });
     }
     
     // Offline Mode
@@ -998,6 +1249,25 @@ class GymSyncApp {
                     break;
                 case 'sale':
                     this.data.sales.push(item.payload);
+                    break;
+                case 'membership':
+                    // Process membership sale
+                    this.data.sales.push(item.payload.membershipSale);
+                    
+                    // Update member's membership
+                    const member = this.data.members.find(m => m.id === item.payload.memberId);
+                    if (member) {
+                        member.membershipPlanId = item.payload.planId;
+                        member.membershipStatus = 'active';
+                        member.lastVisit = item.payload.membershipSale.createdAt;
+                        
+                        // Clear membership-related alerts
+                        member.alerts = member.alerts.filter(alert => 
+                            !alert.toLowerCase().includes('expired') && 
+                            !alert.toLowerCase().includes('payment') &&
+                            !alert.toLowerCase().includes('membership')
+                        );
+                    }
                     break;
             }
             item.syncStatus = 'synced';
@@ -1215,6 +1485,7 @@ class GymSyncApp {
         const modal = document.getElementById('memberModal');
         const title = document.getElementById('memberModalTitle');
         const form = document.getElementById('memberForm');
+        const planFieldsRow = document.getElementById('planFieldsRow');
         
         // Populate membership plans
         const planSelect = document.getElementById('memberPlan');
@@ -1224,7 +1495,8 @@ class GymSyncApp {
         });
         
         if (memberId) {
-            // Edit mode
+            // Edit mode - show plan fields
+            planFieldsRow.style.display = 'flex';
             const member = this.data.members.find(m => m.id === memberId);
             title.textContent = 'Edit Member';
             
@@ -1232,11 +1504,12 @@ class GymSyncApp {
             document.getElementById('memberLastName').value = member.lastName;
             document.getElementById('memberEmail').value = member.email;
             document.getElementById('memberPhone').value = member.phone;
-            document.getElementById('memberPlan').value = member.membershipPlanId;
+            document.getElementById('memberPlan').value = member.membershipPlanId || '';
             document.getElementById('memberStatus').value = member.membershipStatus;
             document.getElementById('memberAlerts').value = member.alerts.join('\n');
         } else {
-            // Add mode
+            // Add mode - hide plan fields
+            planFieldsRow.style.display = 'none';
             title.textContent = 'Add Member';
             form.reset();
         }
@@ -1270,16 +1543,28 @@ class GymSyncApp {
             lastName: formData.get('lastName').trim(),
             email: formData.get('email').trim(),
             phone: formData.get('phone').trim(),
-            membershipPlanId: parseInt(formData.get('membershipPlanId')),
-            membershipStatus: formData.get('membershipStatus'),
             alerts: formData.get('alerts').split('\n').map(alert => alert.trim()).filter(alert => alert.length > 0),
             lastVisit: new Date().toISOString()
         };
+        
+        // Only include plan data if it's available (edit mode)
+        if (formData.get('membershipPlanId')) {
+            memberData.membershipPlanId = parseInt(formData.get('membershipPlanId'));
+            memberData.membershipStatus = formData.get('membershipStatus');
+        }
         
         // Validation
         if (!memberData.firstName || !memberData.lastName || !memberData.email || !memberData.phone) {
             this.showToast('Please fill in all required fields', 'error');
             return;
+        }
+        
+        // Additional validation for edit mode
+        if (this.state.editingMemberId) {
+            if (formData.get('membershipPlanId') && !formData.get('membershipStatus')) {
+                this.showToast('Please select a membership status when a plan is selected', 'error');
+                return;
+            }
         }
         
         // Check for duplicate email (except when editing the same member)
@@ -1295,17 +1580,28 @@ class GymSyncApp {
             // Update existing member
             const memberIndex = this.data.members.findIndex(m => m.id === this.state.editingMemberId);
             this.data.members[memberIndex] = { ...this.data.members[memberIndex], ...memberData };
+            
+            // Update status for the edited member
+            this.updateMemberStatus(this.data.members[memberIndex]);
+            
             this.showToast(`Member ${memberData.firstName} ${memberData.lastName} updated successfully`, 'success');
             this.addNotification('info', `Member updated: ${memberData.firstName} ${memberData.lastName}`);
         } else {
             // Add new member
             const newMember = {
                 id: this.generateMemberId(),
-                ...memberData
+                ...memberData,
+                accountStatus: 'active',
+                isBanned: false,
+                isFrozen: false,
+                freezeReason: null
             };
             this.data.members.push(newMember);
             this.showToast(`Member ${memberData.firstName} ${memberData.lastName} added successfully (ID: ${newMember.id})`, 'success');
             this.addNotification('success', `New member added: ${memberData.firstName} ${memberData.lastName} (ID: ${newMember.id})`);
+            
+            // Update status for the new member
+            this.updateMemberStatus(newMember);
         }
         
         this.savePersistedData();
@@ -1322,32 +1618,73 @@ class GymSyncApp {
     
     openMemberProfileModal(member) {
         const modal = document.getElementById('memberProfileModal');
+        if (!modal) {
+            console.error('Member profile modal not found');
+            return;
+        }
+        
         const plan = this.data.membershipPlans.find(p => p.id === member.membershipPlanId);
         
-        // Populate member info
-        document.getElementById('profileMemberId').textContent = `#${member.id.toString().padStart(4, '0')}`;
-        document.getElementById('profileMemberName').textContent = `${member.firstName} ${member.lastName}`;
-        document.getElementById('profileMemberEmail').textContent = member.email;
-        document.getElementById('profileMemberPhone').textContent = member.phone;
-        document.getElementById('profileMemberPlan').textContent = plan ? plan.name : 'Unknown';
-        document.getElementById('profileMemberStatus').textContent = member.membershipStatus;
-        document.getElementById('profileMemberStatus').className = `status-badge ${member.membershipStatus}`;
-        document.getElementById('profileMemberLastVisit').textContent = this.formatDate(member.lastVisit);
+        // Store current profile member
+        this.currentProfileMember = member;
+        
+        // Populate member info with error handling
+        const elements = {
+            profileMemberId: `#${member.id.toString().padStart(4, '0')}`,
+            profileMemberName: `${member.firstName} ${member.lastName}`,
+            profileMemberEmail: member.email,
+            profileMemberPhone: member.phone,
+            profileMemberPlan: plan ? plan.name : 'No Plan',
+            profileMemberStatus: member.membershipStatus,
+            profileAccountStatus: member.accountStatus,
+            profileMemberExpiry: member.membershipExpiry ? this.formatDate(member.membershipExpiry) : 'No membership purchased',
+            profileMemberLastVisit: this.formatDate(member.lastVisit)
+        };
+        
+        Object.keys(elements).forEach(elementId => {
+            const element = document.getElementById(elementId);
+            if (element) {
+                if (elementId === 'profileMemberStatus') {
+                    element.textContent = elements[elementId];
+                    element.className = `status-badge ${member.membershipStatus}`;
+                } else if (elementId === 'profileAccountStatus') {
+                    element.textContent = elements[elementId];
+                    element.className = `status-badge ${member.accountStatus}`;
+                } else {
+                    element.textContent = elements[elementId];
+                }
+            }
+        });
         
         // Calculate member since (earliest record)
         const memberSince = this.getMemberSinceDate(member.id);
-        document.getElementById('profileMemberSince').textContent = this.formatDate(memberSince);
+        const memberSinceElement = document.getElementById('profileMemberSince');
+        if (memberSinceElement) {
+            memberSinceElement.textContent = this.formatDate(memberSince);
+        }
         
         // Populate alerts
         const alertsContainer = document.getElementById('profileMemberAlerts');
-        if (member.alerts.length > 0) {
-            alertsContainer.innerHTML = `
-                <h5>Alerts</h5>
-                ${member.alerts.map(alert => `<div class="alert">⚠️ ${alert}</div>`).join('')}
-            `;
-        } else {
-            alertsContainer.innerHTML = '';
+        if (alertsContainer) {
+            const allAlerts = [...member.alerts];
+            
+            // Add freeze alert if frozen
+            if (member.isFrozen) {
+                allAlerts.push(`Account frozen: ${member.freezeReason}`);
+            }
+            
+            if (allAlerts.length > 0) {
+                alertsContainer.innerHTML = `
+                    <h5>Alerts</h5>
+                    ${allAlerts.map(alert => `<div class="alert">⚠️ ${alert}</div>`).join('')}
+                `;
+            } else {
+                alertsContainer.innerHTML = '';
+            }
         }
+        
+        // Update freeze/unfreeze buttons
+        this.updateFreezeButtons(member);
         
         // Load tab data
         this.loadMemberProfileData(member);
@@ -1356,6 +1693,122 @@ class GymSyncApp {
         this.switchProfileTab('checkins');
         
         modal.classList.add('open');
+    }
+    
+    getCurrentProfileMember() {
+        return this.currentProfileMember;
+    }
+    
+    updateFreezeButtons(member) {
+        const freezeBtn = document.getElementById('freezeAccountBtn');
+        const unfreezeBtn = document.getElementById('unfreezeAccountBtn');
+        
+        if (!freezeBtn || !unfreezeBtn) {
+            console.error('Freeze buttons not found');
+            return;
+        }
+        
+        if (member.isFrozen) {
+            freezeBtn.style.display = 'none';
+            unfreezeBtn.style.display = 'inline-block';
+        } else {
+            // Allow freezing any account regardless of membership status
+            freezeBtn.style.display = 'inline-block';
+            freezeBtn.disabled = false;
+            freezeBtn.textContent = 'Freeze Account';
+            
+            unfreezeBtn.style.display = 'none';
+        }
+    }
+    
+    freezeAccount() {
+        const member = this.getCurrentProfileMember();
+        if (!member) return;
+        
+        const reason = prompt('Please enter a reason for freezing this account:');
+        if (!reason || reason.trim() === '') {
+            this.showToast('Freeze reason is required', 'error');
+            return;
+        }
+        
+        // Confirm freeze
+        if (!confirm(`Are you sure you want to freeze ${member.firstName} ${member.lastName}'s account?`)) {
+            return;
+        }
+        
+        // Freeze the account
+        member.isFrozen = true;
+        member.freezeReason = reason.trim();
+        
+        // Update status using centralized function
+        this.updateMemberStatus(member);
+        
+        // Add freeze alert
+        if (!member.alerts) member.alerts = [];
+        member.alerts.push(`Account frozen: ${reason.trim()}`);
+        
+        this.savePersistedData();
+        this.showToast(`Account frozen for ${member.firstName} ${member.lastName}`, 'warning');
+        this.addNotification('warning', `Account frozen: ${member.firstName} ${member.lastName} - ${reason.trim()}`);
+        
+        // Update the profile display
+        this.openMemberProfileModal(member);
+        
+        // Update member cards if on members screen
+        if (this.state.currentScreen === 'members') {
+            this.renderMembers();
+        }
+        
+        // Update selected member panel if this member is selected
+        if (this.state.selectedMemberId === member.id) {
+            this.updateSelectedMemberPanel();
+        }
+    }
+    
+    unfreezeAccount() {
+        const member = this.getCurrentProfileMember();
+        if (!member) return;
+        
+        if (!member.isFrozen) {
+            this.showToast('Account is not frozen', 'error');
+            return;
+        }
+        
+        // Confirm unfreeze
+        if (!confirm(`Are you sure you want to unfreeze ${member.firstName} ${member.lastName}'s account?`)) {
+            return;
+        }
+        
+        // Unfreeze the account
+        member.isFrozen = false;
+        member.freezeReason = null;
+        
+        // Update status using centralized function
+        this.updateMemberStatus(member);
+        
+        // Remove freeze alert
+        if (member.alerts) {
+            member.alerts = member.alerts.filter(alert => 
+                !alert.toLowerCase().includes('account frozen')
+            );
+        }
+        
+        this.savePersistedData();
+        this.showToast(`Account unfrozen for ${member.firstName} ${member.lastName}`, 'success');
+        this.addNotification('success', `Account unfrozen: ${member.firstName} ${member.lastName}`);
+        
+        // Update the profile display
+        this.openMemberProfileModal(member);
+        
+        // Update member cards if on members screen
+        if (this.state.currentScreen === 'members') {
+            this.renderMembers();
+        }
+        
+        // Update selected member panel if this member is selected
+        if (this.state.selectedMemberId === member.id) {
+            this.updateSelectedMemberPanel();
+        }
     }
     
     closeMemberProfileModal() {
@@ -1463,17 +1916,35 @@ class GymSyncApp {
         const purchasesHtml = memberSales
             .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
             .slice(0, 20)
-            .map(sale => `
-                <div class="purchase-item">
-                    <div class="item-info">
-                        <div class="item-title">$${sale.total.toFixed(2)} • ${sale.paymentMethod}</div>
-                        <div class="item-details">
-                            ${sale.items.length} item${sale.items.length !== 1 ? 's' : ''}
+            .map(sale => {
+                // Check if this sale has already been refunded
+                const refundedAmount = this.data.refunds
+                    .filter(r => r.originalSaleId === sale.id)
+                    .reduce((sum, r) => sum + r.amount, 0);
+                
+                const remainingRefundable = sale.total - refundedAmount;
+                const canRefund = remainingRefundable > 0;
+                
+                return `
+                    <div class="purchase-item">
+                        <div class="item-info">
+                            <div class="item-title">
+                                $${sale.total.toFixed(2)} • ${sale.paymentMethod}
+                                ${refundedAmount > 0 ? `<span style="color: #dc3545;">(Refunded: $${refundedAmount.toFixed(2)})</span>` : ''}
+                            </div>
+                            <div class="item-details">
+                                ${sale.items.length} item${sale.items.length !== 1 ? 's' : ''}
+                                ${sale.type === 'membership' ? ' • Membership Purchase' : ''}
+                                ${refundedAmount > 0 ? ' • Partially Refunded' : ''}
+                            </div>
+                        </div>
+                        <div class="item-time">
+                            ${this.formatDateTime(sale.createdAt)}
+                            ${canRefund ? `<br><button class="refund-btn" onclick="app.initiateRefund(${sale.id})">Refund</button>` : ''}
                         </div>
                     </div>
-                    <div class="item-time">${this.formatDateTime(sale.createdAt)}</div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         
         container.innerHTML = purchasesHtml;
     }
@@ -1544,6 +2015,234 @@ class GymSyncApp {
         return date.toLocaleString();
     }
     
+    calculateMembershipEndDate(startDate, duration) {
+        const endDate = new Date(startDate);
+        
+        if (duration.includes('month')) {
+            const months = parseInt(duration);
+            endDate.setMonth(endDate.getMonth() + months);
+        } else if (duration.includes('year')) {
+            const years = parseInt(duration);
+            endDate.setFullYear(endDate.getFullYear() + years);
+        }
+        
+        return endDate;
+    }
+    
+    // Refund Functions
+    initiateRefund(saleId) {
+        const sale = this.data.sales.find(s => s.id === saleId);
+        if (!sale) return;
+        
+        // Check if fully refunded
+        const refundedAmount = this.data.refunds
+            .filter(r => r.originalSaleId === saleId)
+            .reduce((sum, r) => sum + r.amount, 0);
+        
+        const remainingRefundable = sale.total - refundedAmount;
+        
+        if (remainingRefundable <= 0) {
+            this.showToast('This sale has already been fully refunded', 'warning');
+            return;
+        }
+        
+        this.state.currentRefundSale = sale;
+        this.openRefundModal();
+    }
+    
+    openRefundModal() {
+        const modal = document.getElementById('refundModal');
+        const sale = this.state.currentRefundSale;
+        
+        if (!sale) return;
+        
+        // Calculate already refunded amount
+        const refundedAmount = this.data.refunds
+            .filter(r => r.originalSaleId === sale.id)
+            .reduce((sum, r) => sum + r.amount, 0);
+        
+        const remainingRefundable = sale.total - refundedAmount;
+        
+        // Populate sale details
+        const saleDetailsHtml = `
+            <div class="sale-item">
+                <div class="item-info">
+                    <div class="item-name">Sale #${sale.id}</div>
+                    <div class="item-details">${this.formatDateTime(sale.createdAt)}</div>
+                </div>
+                <div class="item-price">$${sale.total.toFixed(2)}</div>
+            </div>
+            ${sale.items.map(item => `
+                <div class="sale-item">
+                    <div class="item-info">
+                        <div class="item-name">${item.name}</div>
+                        <div class="item-details">Qty: ${item.quantity} @ $${item.price.toFixed(2)}</div>
+                    </div>
+                    <div class="item-price">$${(item.price * item.quantity).toFixed(2)}</div>
+                </div>
+            `).join('')}
+            ${refundedAmount > 0 ? `
+                <div class="sale-item" style="color: #dc3545;">
+                    <div class="item-info">
+                        <div class="item-name">Previously Refunded</div>
+                        <div class="item-details"></div>
+                    </div>
+                    <div class="item-price">-$${refundedAmount.toFixed(2)}</div>
+                </div>
+            ` : ''}
+            <div class="sale-item" style="font-weight: 600; border-top: 2px solid #e9ecef; padding-top: 1rem;">
+                <div class="item-info">
+                    <div class="item-name">Remaining Refundable</div>
+                    <div class="item-details"></div>
+                </div>
+                <div class="item-price">$${remainingRefundable.toFixed(2)}</div>
+            </div>
+        `;
+        
+        document.getElementById('refundSaleDetails').innerHTML = saleDetailsHtml;
+        
+        // Set max refund amount and default value
+        const refundAmountInput = document.getElementById('refundAmount');
+        refundAmountInput.max = remainingRefundable;
+        refundAmountInput.value = remainingRefundable.toFixed(2);
+        
+        // Update amount info
+        document.getElementById('refundAmountInfo').textContent = 
+            `Maximum refundable amount: $${remainingRefundable.toFixed(2)}`;
+        
+        // Reset form and set values
+        document.getElementById('refundForm').reset();
+        refundAmountInput.value = remainingRefundable.toFixed(2);
+        
+        // Update summary
+        this.updateRefundSummary();
+        
+        modal.classList.add('open');
+    }
+    
+    closeRefundModal() {
+        const modal = document.getElementById('refundModal');
+        modal.classList.remove('open');
+        document.getElementById('refundForm').reset();
+        this.state.currentRefundSale = null;
+    }
+    
+    updateRefundSummary() {
+        const sale = this.state.currentRefundSale;
+        if (!sale) return;
+        
+        const refundAmount = parseFloat(document.getElementById('refundAmount').value) || 0;
+        const refundMethod = document.getElementById('refundMethod').value;
+        
+        document.getElementById('originalAmount').textContent = `$${sale.total.toFixed(2)}`;
+        document.getElementById('summaryRefundAmount').textContent = `$${refundAmount.toFixed(2)}`;
+        document.getElementById('summaryRefundMethod').textContent = refundMethod || '-';
+    }
+    
+    processRefund() {
+        const sale = this.state.currentRefundSale;
+        if (!sale) return;
+        
+        const refundAmount = parseFloat(document.getElementById('refundAmount').value);
+        const refundMethod = document.getElementById('refundMethod').value;
+        const refundReason = document.getElementById('refundReason').value;
+        const refundReasonText = document.getElementById('refundReasonText').value;
+        
+        // Validation
+        if (!refundAmount || refundAmount <= 0) {
+            this.showToast('Please enter a valid refund amount', 'error');
+            return;
+        }
+        
+        // Check against refundable amount
+        const refundedAmount = this.data.refunds
+            .filter(r => r.originalSaleId === sale.id)
+            .reduce((sum, r) => sum + r.amount, 0);
+        
+        const remainingRefundable = sale.total - refundedAmount;
+        
+        // Fix: Allow refund amount up to and including the remaining refundable amount
+        if (refundAmount > remainingRefundable + 0.01) { // Add small tolerance for floating point
+            this.showToast(`Refund amount cannot exceed $${remainingRefundable.toFixed(2)}`, 'error');
+            return;
+        }
+        
+        if (!refundMethod) {
+            this.showToast('Please select a refund method', 'error');
+            return;
+        }
+        
+        if (!refundReason) {
+            this.showToast('Please select a refund reason', 'error');
+            return;
+        }
+        
+        if (refundReason === 'other' && (!refundReasonText || refundReasonText.trim() === '')) {
+            this.showToast('Please specify the refund reason', 'error');
+            return;
+        }
+        
+        // Confirm refund
+        const member = this.data.members.find(m => m.id === sale.memberId);
+        const confirmMessage = `Process refund of $${refundAmount.toFixed(2)} for ${member.firstName} ${member.lastName}?`;
+        
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+        
+        // Create refund record
+        const refund = {
+            id: Date.now(),
+            originalSaleId: sale.id,
+            memberId: sale.memberId,
+            amount: refundAmount,
+            method: refundMethod,
+            reason: refundReason,
+            reasonText: refundReasonText || '',
+            processedAt: new Date().toISOString(),
+            processedBy: 'Staff', // In a real system, this would be the logged-in staff member
+            status: 'completed'
+        };
+        
+        // Add refund to data
+        this.data.refunds.push(refund);
+        
+        // Handle membership refunds
+        if (sale.type === 'membership') {
+            this.handleMembershipRefund(sale, refundAmount, member);
+        }
+        
+        this.savePersistedData();
+        this.showToast(`Refund of $${refundAmount.toFixed(2)} processed successfully`, 'success');
+        this.addNotification('info', `Refund processed: ${member.firstName} ${member.lastName} - $${refundAmount.toFixed(2)}`);
+        
+        this.closeRefundModal();
+        
+        // Update member profile if open
+        if (this.state.currentScreen === 'members' && this.currentProfileMember && this.currentProfileMember.id === member.id) {
+            this.loadMemberProfileData(member);
+        }
+    }
+    
+    handleMembershipRefund(sale, refundAmount, member) {
+        // For membership refunds, we might want to adjust the membership expiry
+        // This is a simplified version - in a real system, you'd handle pro-rata calculations
+        if (refundAmount >= sale.total) {
+            // Full refund - remove membership
+            member.membershipPlanId = null;
+            member.membershipExpiry = null;
+            member.paymentStatus = 'none';
+            member.membershipStatus = 'inactive';
+            
+            // Add alert about membership cancellation
+            if (!member.alerts) member.alerts = [];
+            member.alerts.push('Membership cancelled due to refund');
+        }
+        
+        // Update member status
+        this.updateMemberStatus(member);
+    }
+    
     resetDemoData() {
         if (confirm('Are you sure you want to reset all demo data? This will clear check-ins, sales, and enrollments.')) {
             // Clear persisted data
@@ -1582,7 +2281,7 @@ class GymSyncApp {
         setInterval(() => {
             const now = new Date();
             this.data.classes.forEach(classSession => {
-                const classTime = new Date(classSession.dateTime);
+                const classTime = new Date(classSession.dateTime || classSession.startTime);
                 const diffMins = (classTime - now) / 60000;
                 
                 if (diffMins > 0 && diffMins <= 30 && diffMins % 15 === 0) {
