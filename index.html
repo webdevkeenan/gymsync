@@ -12,7 +12,10 @@
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <h1 class="logo">🏋️ GymSync</h1>
-                <button class="sidebar-toggle" id="sidebarToggle">☰</button>
+                <div class="sidebar-header-buttons">
+                    <button class="sidebar-close" id="sidebarClose">×</button>
+                    <button class="sidebar-toggle" id="sidebarToggle">☰</button>
+                </div>
             </div>
             <nav class="sidebar-nav">
                 <ul class="nav-list">
@@ -79,6 +82,9 @@
                 <button class="btn btn-sm btn-secondary" id="resetDataBtn">Reset Demo Data</button>
             </div>
         </aside>
+
+        <!-- Mobile Sidebar Overlay -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
         <!-- Main Content Area -->
         <main class="main-content">

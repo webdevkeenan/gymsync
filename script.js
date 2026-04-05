@@ -325,7 +325,22 @@ class GymSyncApp {
         
         // Mobile sidebar toggle
         document.getElementById('mobileSidebarToggle').addEventListener('click', () => {
-            document.getElementById('sidebar').classList.toggle('open');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('show');
+        });
+        
+        // Close sidebar when clicking overlay
+        document.getElementById('sidebarOverlay').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('sidebarOverlay').classList.remove('show');
+        });
+        
+        // Close sidebar when clicking close button
+        document.getElementById('sidebarClose').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('sidebarOverlay').classList.remove('show');
         });
         
         // Sidebar toggle (desktop)
@@ -529,6 +544,7 @@ class GymSyncApp {
         
         // Close mobile sidebar
         document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('sidebarOverlay').classList.remove('show');
     }
     
     // Selected Member Management
@@ -602,29 +618,7 @@ class GymSyncApp {
         `;
     }
     
-    // Navigation
-    navigateToScreen(screenName) {
-        this.state.currentScreen = screenName;
-        this.render();
         
-        // Update navigation active state
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.classList.remove('active');
-            if (btn.dataset.screen === screenName) {
-                btn.classList.add('active');
-            }
-        });
-        
-        // Update screen visibility - only hide screens that aren't the target
-        document.querySelectorAll('.screen').forEach(screen => {
-            if (screen.id === `${screenName}Screen`) {
-                screen.classList.remove('hidden');
-            } else {
-                screen.classList.add('hidden');
-            }
-        });
-    }
-    
     // Screen Rendering
     render() {
         this.updateSelectedMemberPanel();
