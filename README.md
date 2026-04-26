@@ -1,5 +1,7 @@
 # GymSync - Gym Management Dashboard
 
+## Live Demo - https://webdevkeenan.github.io/gymsync/
+
 A responsive, front-end-only web prototype for gym management, designed for front desk staff, managers, and members.
 <img width="1366" height="1102" alt="Screenshot 2026-04-03 at 19-07-51 🏋️ GymSync - Gym Management Dashboard" src="https://github.com/user-attachments/assets/4cb972c4-95a5-460e-9edb-a4e1e6b03977" />
 
